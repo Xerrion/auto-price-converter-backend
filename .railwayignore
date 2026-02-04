@@ -1,0 +1,40 @@
+# Development files
+.git
+.venv
+.ruff_cache
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Documentation
+README.md
+docs/
+
+# Database files
+sql/
+supabase/
+
+# Lock files (Railway will generate its own)
+uv.lock
+
+# IDE
+.vscode/
+.idea/
+
+# macOS
+.DS_Store
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Logs
+*.log
+logs/
