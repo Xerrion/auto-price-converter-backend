@@ -25,15 +25,22 @@ async def lifespan(app: FastAPI):
     scheduler = None
 
     if settings.enable_scheduler:
-        logger.info(f"Starting scheduler: interval={settings.sync_interval_hours}h, enabled=True")
-        sync_service = app.state.sync_service
-        scheduler = BackgroundScheduler()
-        scheduler.add_job(
-            sync_service.sync_all_rates, "interval", hours=settings.sync_interval_hours
-        )
-        scheduler.start()
-        app.state.scheduler = scheduler
-        logger.info("Scheduler started successfully")
+        if settings.scheduler_mode == "internal":
+            logger.info(
+                f"Starting scheduler: interval={settings.sync_interval_hours}h, mode=internal"
+            )
+            sync_service = app.state.sync_service
+            scheduler = BackgroundScheduler()
+            scheduler.add_job(
+                sync_service.sync_all_rates, "interval", hours=settings.sync_interval_hours
+            )
+            scheduler.start()
+            app.state.scheduler = scheduler
+            logger.info("Scheduler started successfully")
+        elif settings.scheduler_mode == "external":
+            logger.info("Scheduler mode: external (using GitHub Actions cron)")
+        else:
+            logger.warning(f"Unknown scheduler mode: {settings.scheduler_mode}")
     else:
         logger.info("Scheduler disabled by configuration")
 

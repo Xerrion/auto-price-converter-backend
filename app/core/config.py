@@ -20,6 +20,7 @@ class Settings(BaseSettings):
 
     # Scheduler
     enable_scheduler: bool = True
+    scheduler_mode: str = "internal"  # "internal" or "external"
     sync_interval_hours: int = 24
 
     # Providers
