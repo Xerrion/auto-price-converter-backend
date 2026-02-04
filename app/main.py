@@ -37,8 +37,12 @@ def create_app() -> FastAPI:
         f"log_level={settings.log_level}"
     )
 
-    # Create FastAPI app with lifespan
-    app = FastAPI(title="Auto Price Converter Rates API", lifespan=lifespan)
+    # Create FastAPI app with lifespan and security scheme for Swagger UI
+    app = FastAPI(
+        title="Auto Price Converter Rates API",
+        lifespan=lifespan,
+        swagger_ui_parameters={"persistAuthorization": True},
+    )
 
     # Configure CORS
     origins = settings.origins_list or ["*"]

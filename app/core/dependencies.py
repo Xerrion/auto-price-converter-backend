@@ -7,7 +7,9 @@ from fastapi.security import APIKeyHeader
 
 from app.core.config import Settings, get_settings
 
-api_key_header = APIKeyHeader(name="x-api-key", auto_error=False)
+# Define API key header with auto_error=False to allow optional authentication
+# This will show up in Swagger UI with a lock icon
+api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 
 
 async def verify_api_key(
