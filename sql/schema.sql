@@ -54,3 +54,53 @@ select distinct on (provider)
   symbols
 from public.symbols_runs
 order by provider, fetched_at desc;
+
+-- Disable RLS for backend service role access
+-- This allows the backend to read/write freely using the service role key
+-- while keeping RLS enabled for other clients (like the extension via anon key)
+
+alter table public.rates_runs enable row level security;
+alter table public.rates_entries enable row level security;
+alter table public.symbols_runs enable row level security;
+
+-- Allow service role to bypass RLS (full access)
+-- This is secure because the service role key is kept secret in the backend
+create policy "Service role has full access to rates_runs"
+  on public.rates_runs
+  for all
+  to service_role
+  using (true)
+  with check (true);
+
+create policy "Service role has full access to rates_entries"
+  on public.rates_entries
+  for all
+  to service_role
+  using (true)
+  with check (true);
+
+create policy "Service role has full access to symbols_runs"
+  on public.symbols_runs
+  for all
+  to service_role
+  using (true)
+  with check (true);
+
+-- Allow public read-only access (for the Chrome extension using anon key)
+create policy "Public read access to rates_runs"
+  on public.rates_runs
+  for select
+  to anon
+  using (true);
+
+create policy "Public read access to rates_entries"
+  on public.rates_entries
+  for select
+  to anon
+  using (true);
+
+create policy "Public read access to symbols_runs"
+  on public.symbols_runs
+  for select
+  to anon
+  using (true);
