@@ -7,20 +7,21 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response
 
 from app.core.config import Settings, get_settings
 from app.core.deps import RatesRepoDep
+from app.models import RatesResponse
 from app.utils.caching import apply_cache_headers, build_etag, check_etag_match
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/rates", tags=["rates"])
 
 
-@router.get("/latest", response_model=None)
+@router.get("/latest", response_model=RatesResponse)
 def latest_rates(
     request: Request,
     response: Response,
     rates_repo: RatesRepoDep,
     settings: Annotated[Settings, Depends(get_settings)],
     provider: str | None = None,
-):
+) -> RatesResponse | Response:
     """
     Get latest exchange rates.
 
@@ -32,7 +33,7 @@ def latest_rates(
         settings: Application settings dependency
 
     Returns:
-        Dictionary with base, date, fetched_at, and rates, or 304 Not Modified response
+        RatesResponse with base, date, fetched_at, and rates, or 304 Not Modified
 
     Raises:
         HTTPException: 404 if no rates are available
@@ -55,14 +56,16 @@ def latest_rates(
         logger.warning(f"No rates available for provider={requested}")
         raise HTTPException(status_code=404, detail="No rates available")
 
-    payload = {
-        "base": run["base"],
-        "date": run["date"],
-        "fetched_at": run["fetched_at"],
-        "rates": run["rates"],
-    }
+    # Build response model
+    rates_response = RatesResponse(
+        base=run["base"],
+        date=run["date"],
+        fetched_at=run["fetched_at"],
+        rates=run["rates"],
+    )
 
-    etag = build_etag(payload)
+    # ETag handling (build from model with JSON serialization)
+    etag = build_etag(rates_response.model_dump(mode="json"))
     if check_etag_match(request, etag):
         logger.debug(f"ETag match, returning 304 Not Modified for provider={requested}")
         not_modified = Response(status_code=304)
@@ -73,4 +76,4 @@ def latest_rates(
         f"Returning rates: provider={requested}, date={run['date']}, num_rates={len(run['rates'])}"
     )
     apply_cache_headers(response, etag, settings.cache_ttl_seconds)
-    return payload
+    return rates_response

@@ -7,20 +7,21 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response
 
 from app.core.config import Settings, get_settings
 from app.core.deps import SymbolsRepoDep
+from app.models import SymbolsResponse
 from app.utils.caching import apply_cache_headers, build_etag, check_etag_match
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/symbols", tags=["symbols"])
 
 
-@router.get("/latest", response_model=None)
+@router.get("/latest", response_model=SymbolsResponse)
 def latest_symbols(
     request: Request,
     response: Response,
     symbols_repo: SymbolsRepoDep,
     settings: Annotated[Settings, Depends(get_settings)],
     provider: str | None = None,
-):
+) -> SymbolsResponse | Response:
     """
     Get latest currency symbols.
 
@@ -32,7 +33,7 @@ def latest_symbols(
         settings: Application settings dependency
 
     Returns:
-        Dictionary with provider and symbols, or 304 Not Modified response
+        SymbolsResponse with provider and symbols, or 304 Not Modified
 
     Raises:
         HTTPException: 404 if no symbols are available
@@ -45,8 +46,14 @@ def latest_symbols(
         logger.warning(f"No symbols available for provider={requested}")
         raise HTTPException(status_code=404, detail="No symbols available")
 
-    payload = {"provider": result["provider"], "symbols": result["symbols"]}
-    etag = build_etag(payload)
+    # Build response model
+    symbols_response = SymbolsResponse(
+        provider=result["provider"],
+        symbols=result["symbols"],
+    )
+
+    # ETag handling
+    etag = build_etag(symbols_response.model_dump(mode="json"))
     if check_etag_match(request, etag):
         logger.debug(f"ETag match, returning 304 Not Modified for provider={requested}")
         not_modified = Response(status_code=304)
@@ -55,4 +62,4 @@ def latest_symbols(
 
     logger.info(f"Returning symbols: provider={requested}, num_symbols={len(result['symbols'])}")
     apply_cache_headers(response, etag, settings.cache_ttl_seconds)
-    return payload
+    return symbols_response

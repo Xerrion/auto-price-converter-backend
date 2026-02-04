@@ -2,10 +2,12 @@
 
 from fastapi import APIRouter
 
+from app.models import HealthResponse
+
 router = APIRouter(tags=["health"])
 
 
-@router.get("/health")
-def health() -> dict[str, str]:
+@router.get("/health", response_model=HealthResponse)
+def health() -> HealthResponse:
     """Health check endpoint."""
-    return {"status": "ok"}
+    return HealthResponse(status="ok")
