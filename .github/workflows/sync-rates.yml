@@ -1,0 +1,44 @@
+name: Sync Exchange Rates
+
+on:
+  schedule:
+    # Run daily at 06:00 UTC
+    - cron: '0 6 * * *'
+  
+  # Allow manual triggering from GitHub UI
+  workflow_dispatch:
+
+jobs:
+  sync:
+    name: Trigger Rate Sync
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Call sync endpoint
+        run: |
+          response=$(curl -X POST "${{ secrets.RAILWAY_API_URL }}/jobs/sync" \
+            -H "X-API-Key: ${{ secrets.SYNC_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -w "\n%{http_code}" \
+            -s)
+          
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | head -n-1)
+          
+          echo "HTTP Status: $http_code"
+          echo "Response: $body"
+          
+          if [ "$http_code" != "200" ]; then
+            echo "Error: Sync endpoint returned $http_code"
+            exit 1
+          fi
+      
+      - name: Verify sync completed
+        if: success()
+        run: echo "✅ Exchange rates synced successfully"
+      
+      - name: Report failure
+        if: failure()
+        run: |
+          echo "❌ Sync failed! Check Railway logs at:"
+          echo "${{ secrets.RAILWAY_API_URL }}"
