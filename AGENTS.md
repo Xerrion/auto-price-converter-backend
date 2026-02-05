@@ -293,7 +293,8 @@ etag = build_etag(rates_response.model_dump(mode='json'))  # Not: model_dump()
 
 ## Deployment Notes
 
-- **Railway**: Set `SCHEDULER_MODE=external` and `ENABLE_SCHEDULER=false`
+- **Production URL**: `https://apc-api.up.railway.app`
+- **Railway CLI**: Use `railway logs` to view production logs
 - **GitHub Actions**: Syncs rates daily at 06:00 UTC via cron job
 - **Environment**: Required vars in `.env.example`
 - **RLS Policies**: Service role has full access, public has read-only
