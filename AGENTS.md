@@ -6,7 +6,7 @@ This document provides coding standards and conventions for AI agents working on
 
 FastAPI backend service that fetches exchange rates from multiple providers (Fixer, Frankfurter), stores them in Supabase, and serves a public API with ETag caching. Uses clean layered architecture with dependency injection.
 
-**Tech Stack**: Python 3.9+, FastAPI, Pydantic v2, Supabase, UV package manager, APScheduler
+**Tech Stack**: Python 3.9+, FastAPI, Pydantic v2, Supabase, UV package manager
 
 ## Documentation Lookup Policy
 
@@ -78,12 +78,9 @@ uv run ruff check app/ --fix --unsafe-fixes
 
 ### Testing
 
-**Note**: This project currently has no test suite. When adding tests:
+The project has a comprehensive test suite with **108 tests** and **89% coverage**.
 
 ```bash
-# Install pytest
-uv add --dev pytest pytest-asyncio httpx
-
 # Run all tests
 uv run pytest
 
@@ -93,8 +90,11 @@ uv run pytest tests/test_rates.py
 # Run single test function
 uv run pytest tests/test_rates.py::test_latest_rates -v
 
-# Run with coverage
+# Run with coverage report
 uv run pytest --cov=app --cov-report=html
+
+# Run tests in parallel (faster)
+uv run pytest -n auto
 ```
 
 ### Database Migrations
@@ -116,7 +116,7 @@ supabase migration list
 
 ```
 app/
-├── core/          # Config, database, scheduler, logging, dependencies
+├── core/          # Config, database, logging, dependencies
 ├── models/        # Pydantic models (request/response schemas)
 ├── repositories/  # Database operations (Supabase)
 ├── routers/       # API endpoints (health, rates, symbols, jobs)
@@ -293,7 +293,8 @@ etag = build_etag(rates_response.model_dump(mode='json'))  # Not: model_dump()
 
 ## Deployment Notes
 
-- **Railway**: Set `SCHEDULER_MODE=external` and `ENABLE_SCHEDULER=false`
+- **Production URL**: `https://apc-api.up.railway.app`
+- **Railway CLI**: Use `railway logs` to view production logs
 - **GitHub Actions**: Syncs rates daily at 06:00 UTC via cron job
 - **Environment**: Required vars in `.env.example`
 - **RLS Policies**: Service role has full access, public has read-only
@@ -311,5 +312,8 @@ etag = build_etag(rates_response.model_dump(mode='json'))  # Not: model_dump()
 
 - Use conventional commits: `feat:`, `fix:`, `refactor:`, `docs:`, `chore:`
 - Commit messages: Imperative mood ("add feature" not "added feature")
+- **Atomic commits**: Each commit should touch as few files as possible
 - Small, focused commits with clear descriptions
+- Always work on feature branches, never commit directly to main
+- Always create PRs for code review before merging
 - Never commit `.env` files or secrets
