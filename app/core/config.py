@@ -9,8 +9,8 @@ class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
 
     # Database
-    supabase_url: str
-    supabase_service_role_key: str
+    supabase_url: str = ""
+    supabase_service_role_key: str = ""
 
     # External APIs
     fixer_api_key: str | None = None
@@ -18,9 +18,7 @@ class Settings(BaseSettings):
     # Security
     sync_api_key: str | None = None
 
-    # Scheduler
-    enable_scheduler: bool = True
-    scheduler_mode: str = "internal"  # "internal" or "external"
+    # Sync settings
     sync_interval_hours: int = 24
 
     # Providers

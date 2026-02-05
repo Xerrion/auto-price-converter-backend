@@ -8,7 +8,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import get_settings
 from app.core.database import get_supabase_client
 from app.core.logging import setup_logging
-from app.core.scheduler import lifespan
 from app.repositories.rates import RatesRepository
 from app.repositories.symbols import SymbolsRepository
 from app.routers import health, jobs, rates, symbols
@@ -33,14 +32,12 @@ def create_app() -> FastAPI:
     settings = get_settings()
     logger.info(
         f"Settings loaded: environment={settings.environment}, "
-        f"scheduler_enabled={settings.enable_scheduler}, "
         f"log_level={settings.log_level}"
     )
 
-    # Create FastAPI app with lifespan and security scheme for Swagger UI
+    # Create FastAPI app with security scheme for Swagger UI
     app = FastAPI(
         title="Auto Price Converter Rates API",
-        lifespan=lifespan,
         swagger_ui_parameters={"persistAuthorization": True},
         servers=[
             {"url": "http://127.0.0.1:8000", "description": "Local development"},
