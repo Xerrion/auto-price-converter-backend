@@ -78,12 +78,9 @@ uv run ruff check app/ --fix --unsafe-fixes
 
 ### Testing
 
-**Note**: This project currently has no test suite. When adding tests:
+The project has a comprehensive test suite with **108 tests** and **89% coverage**.
 
 ```bash
-# Install pytest
-uv add --dev pytest pytest-asyncio httpx
-
 # Run all tests
 uv run pytest
 
@@ -93,8 +90,11 @@ uv run pytest tests/test_rates.py
 # Run single test function
 uv run pytest tests/test_rates.py::test_latest_rates -v
 
-# Run with coverage
+# Run with coverage report
 uv run pytest --cov=app --cov-report=html
+
+# Run tests in parallel (faster)
+uv run pytest -n auto
 ```
 
 ### Database Migrations
