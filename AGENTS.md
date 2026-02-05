@@ -116,7 +116,7 @@ supabase migration list
 
 ```
 app/
-├── core/          # Config, database, scheduler, logging, dependencies
+├── core/          # Config, database, logging, dependencies
 ├── models/        # Pydantic models (request/response schemas)
 ├── repositories/  # Database operations (Supabase)
 ├── routers/       # API endpoints (health, rates, symbols, jobs)
