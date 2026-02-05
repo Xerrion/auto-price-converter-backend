@@ -6,7 +6,7 @@ This document provides coding standards and conventions for AI agents working on
 
 FastAPI backend service that fetches exchange rates from multiple providers (Fixer, Frankfurter), stores them in Supabase, and serves a public API with ETag caching. Uses clean layered architecture with dependency injection.
 
-**Tech Stack**: Python 3.9+, FastAPI, Pydantic v2, Supabase, UV package manager, APScheduler
+**Tech Stack**: Python 3.9+, FastAPI, Pydantic v2, Supabase, UV package manager
 
 ## Documentation Lookup Policy
 
