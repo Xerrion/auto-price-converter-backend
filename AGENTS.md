@@ -299,6 +299,21 @@ etag = build_etag(rates_response.model_dump(mode='json'))  # Not: model_dump()
 - **Environment**: Required vars in `.env.example`
 - **RLS Policies**: Service role has full access, public has read-only
 
+## Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `SUPABASE_URL` | (required) | Supabase project URL |
+| `SUPABASE_SERVICE_ROLE_KEY` | (required) | Supabase service role key |
+| `FIXER_API_KEY` | `None` | Fixer.io API key |
+| `SYNC_API_KEY` | `None` | API key for `/jobs/sync` endpoint |
+| `SYNC_INTERVAL_HOURS` | `24` | Exchange rates cache TTL (hours) |
+| `SYMBOLS_CACHE_HOURS` | `4320` | Currency symbols cache TTL (hours, 4320 = 180 days) |
+| `PROVIDER_PRIORITY` | `fixer,frankfurter` | Provider merge priority |
+| `ALLOW_ORIGINS` | `*` | CORS allowed origins |
+| `LOG_LEVEL` | `INFO` | Logging level |
+| `ENVIRONMENT` | `development` | Environment name |
+
 ## Common Gotchas
 
 1. **DateTime Serialization**: Use `datetime` type in models, not `str`
