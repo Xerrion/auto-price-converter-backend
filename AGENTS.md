@@ -312,5 +312,8 @@ etag = build_etag(rates_response.model_dump(mode='json'))  # Not: model_dump()
 
 - Use conventional commits: `feat:`, `fix:`, `refactor:`, `docs:`, `chore:`
 - Commit messages: Imperative mood ("add feature" not "added feature")
+- **Atomic commits**: Each commit should touch as few files as possible
 - Small, focused commits with clear descriptions
+- Always work on feature branches, never commit directly to main
+- Always create PRs for code review before merging
 - Never commit `.env` files or secrets
