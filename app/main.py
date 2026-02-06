@@ -60,7 +60,7 @@ def create_app() -> FastAPI:
     logger.info("Initializing core dependencies")
     supabase = get_supabase_client()
     rates_repo = RatesRepository(supabase, settings.cache_ttl_seconds)
-    symbols_repo = SymbolsRepository(supabase, settings.cache_ttl_seconds)
+    symbols_repo = SymbolsRepository(supabase, settings.symbols_cache_ttl_seconds)
     provider_service = ProviderService(settings.fixer_api_key)
     sync_service = RatesSyncService(
         rates_repo, symbols_repo, provider_service, settings.provider_priority_list
