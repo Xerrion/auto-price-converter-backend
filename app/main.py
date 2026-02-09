@@ -40,8 +40,11 @@ def create_app() -> FastAPI:
         title="Auto Price Converter Rates API",
         swagger_ui_parameters={"persistAuthorization": True},
         servers=[
+            {
+                "url": "https://apc-api.up.railway.app",
+                "description": "Production",
+            },
             {"url": "http://127.0.0.1:8000", "description": "Local development"},
-            {"url": "http://localhost:8000", "description": "Local development (localhost)"},
         ],
     )
 
