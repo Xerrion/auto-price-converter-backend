@@ -1,54 +1,30 @@
-# Agent Development Guide
+# AGENTS.md - Coding Agent Guidelines
 
-This document provides coding standards and conventions for AI agents working on the Auto Price Converter Backend.
+This file provides essential information for AI coding agents working in this repository.
 
 ## Project Overview
 
-FastAPI backend service that fetches exchange rates from multiple providers (Fixer, Frankfurter), stores them in Supabase, and serves a public API with ETag caching. Uses clean layered architecture with dependency injection.
+**Auto Price Converter Backend** is a FastAPI service that fetches exchange rates from multiple providers (Fixer, Frankfurter), stores them in Supabase, and serves a public API with ETag caching. Uses clean layered architecture with dependency injection.
 
 **Tech Stack**: Python 3.9+, FastAPI, Pydantic v2, Supabase, UV package manager
 
-## Documentation Lookup Policy
+## Package Manager
 
-**CRITICAL**: Always consult official documentation via Context7 tools when:
-
-- Implementing features with FastAPI, Pydantic, Supabase, or other dependencies
-- Unsure about API syntax, parameters, or best practices
-- Working with unfamiliar library features or patterns
-- Encountering errors or unexpected behavior
-
-**Context7 Tools Available**:
-
-1. `Context7_resolve-library-id` - Find the correct library ID (e.g., "fastapi" → "/tiangolo/fastapi")
-2. `Context7_query-docs` - Query official docs with specific questions
-
-**Example Usage**:
-
-```text
-Question: "How do I add response_model validation in FastAPI?"
-1. Resolve: Context7_resolve-library-id(libraryName="fastapi", query="response model validation")
-2. Query: Context7_query-docs(libraryId="/tiangolo/fastapi", query="response_model validation examples")
-```
-
-**When to Use Context7**:
-
-- ✅ Before implementing new FastAPI routes or middleware
-- ✅ When adding Pydantic v2 features (Field validators, computed fields, etc.)
-- ✅ For Supabase Python client operations (queries, RLS, auth)
-- ✅ When debugging library-specific errors
-- ❌ Don't guess library APIs - always verify with official docs first!
-
-## Build & Development Commands
-
-### Setup
+⚠️ **ALWAYS use `uv` as the package manager** - It's faster and more reliable than pip.
 
 ```bash
-# Install dependencies (recommended)
-uv sync
+uv sync                  # Install dependencies
+uv add <package>         # Add a dependency
+uv remove <package>      # Remove a dependency
+```
 
-# Alternative: pip install
+**Alternative (pip):**
+
+```bash
 python -m venv .venv && source .venv/bin/activate && pip install -e .
 ```
+
+## Build & Development Commands
 
 ### Running the Server
 
@@ -60,61 +36,66 @@ uv run uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 uv run uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
-### Linting & Formatting
-
-```bash
-# Check all code
-uv run ruff check app/
-
-# Auto-fix issues
-uv run ruff check app/ --fix
-
-# Format code
-uv run ruff format app/
-
-# Fix unsafe issues (like sorting __all__)
-uv run ruff check app/ --fix --unsafe-fixes
-```
-
 ### Testing
 
 The project has a comprehensive test suite with **108 tests** and **89% coverage**.
 
 ```bash
-# Run all tests
-uv run pytest
+uv run pytest                              # Run all tests
+uv run pytest tests/test_rates.py          # Run single test file
+uv run pytest tests/test_rates.py::test_latest_rates -v  # Run single test function
+uv run pytest --cov=app --cov-report=html  # Run with coverage report
+uv run pytest -n auto                      # Run tests in parallel (faster)
+```
 
-# Run single test file
-uv run pytest tests/test_rates.py
+### Linting & Formatting
 
-# Run single test function
-uv run pytest tests/test_rates.py::test_latest_rates -v
-
-# Run with coverage report
-uv run pytest --cov=app --cov-report=html
-
-# Run tests in parallel (faster)
-uv run pytest -n auto
+```bash
+uv run ruff check app/              # Check all code
+uv run ruff check app/ --fix        # Auto-fix issues
+uv run ruff format app/             # Format code
+uv run ruff check app/ --fix --unsafe-fixes  # Fix unsafe issues
 ```
 
 ### Database Migrations
 
 ```bash
-# Create new migration
-supabase migration new migration_name
-
-# Apply migrations
-supabase db push
-
-# Check migration status
-supabase migration list
+supabase migration new migration_name  # Create new migration
+supabase db push                       # Apply migrations
+supabase migration list                # Check migration status
 ```
 
-## Architecture
+## Versioning & Releases
 
-### Directory Structure
+This project uses **Release Please** for automated version management and changelog generation.
 
-```
+### How It Works
+
+1. **Make changes** using [Conventional Commits](https://www.conventionalcommits.org/):
+   - `feat: add new feature` → Minor version bump
+   - `fix: resolve bug` → Patch version bump
+   - `feat!: breaking change` or `BREAKING CHANGE:` → Major version bump
+
+2. **Merge to main** → Release Please automatically creates/updates a Release PR with:
+   - Version bump in `pyproject.toml`
+   - Updated `CHANGELOG.md`
+
+3. **Merge the Release PR** → Automatically:
+   - Creates a GitHub Release
+   - Creates a git tag
+
+### Configuration Files
+
+- `release-please-config.json` - Release Please configuration
+- `.release-please-manifest.json` - Tracks current version
+
+### Required Secret
+
+- `RELEASE_TOKEN` - A GitHub PAT with `contents: write` permission (Fine-grained PAT)
+
+## Project Structure
+
+```text
 app/
 ├── core/          # Config, database, logging, dependencies
 ├── models/        # Pydantic models (request/response schemas)
@@ -132,7 +113,43 @@ app/
 - **Models**: Data validation, serialization, OpenAPI schemas
 - **Core**: Cross-cutting concerns (config, logging, dependencies)
 
+## Documentation Access
+
+⚠️ **ALWAYS consult Context7 documentation when unsure** about library APIs, features, or best practices.
+
+Before implementing features or using unfamiliar APIs:
+
+1. **Query Context7** for the relevant library documentation (FastAPI, Pydantic, Supabase, etc.)
+2. **Use `resolve-library-id`** first to get the correct library ID
+3. **Use `query-docs`** to get up-to-date API documentation and examples
+
+**Examples of when to use Context7:**
+
+```python
+# ❌ Don't guess FastAPI response_model syntax
+# ✅ Ask Context7: "How to add response_model validation in FastAPI?"
+
+# ❌ Don't assume Pydantic v2 behavior
+# ✅ Ask Context7: "How to use Field validators in Pydantic v2?"
+
+# ❌ Don't guess Supabase Python client
+# ✅ Ask Context7: "How to query with filters in Supabase Python?"
+```
+
+**This prevents:**
+
+- Using outdated or incorrect API patterns
+- Making assumptions about library features
+- Missing better approaches that exist in the documentation
+
 ## Code Style Guidelines
+
+### General Principles
+
+- **Prefer existing patterns** in `app/` — avoid large refactors
+- **Keep changes minimal and focused**
+- **Keep functions small and testable**
+- Follow the existing code organization and naming conventions
 
 ### Imports
 
@@ -162,19 +179,19 @@ from app.utils.caching import build_etag
 - Use `dict[str, float]` instead of `Dict[str, float]`
 - Use `Annotated` for FastAPI dependencies:
 
-  ```python
-  def endpoint(
-      settings: Annotated[Settings, Depends(get_settings)],
-      api_key: Annotated[str | None, Depends(verify_api_key)],
-  ) -> ResponseModel:
-  ```
+```python
+def endpoint(
+    settings: Annotated[Settings, Depends(get_settings)],
+    api_key: Annotated[str | None, Depends(verify_api_key)],
+) -> ResponseModel:
+```
 
 ### Naming Conventions
 
-- **Files**: Snake case (`rates_sync.py`, `caching.py`)
-- **Classes**: Pascal case (`RatesSyncService`, `RatesResponse`)
-- **Functions/Variables**: Snake case (`sync_all_rates`, `provider_priority`)
-- **Constants**: Upper snake case (`CACHE_TTL_SECONDS`, `LOG_LEVEL`)
+- **Files**: snake_case (`rates_sync.py`, `caching.py`)
+- **Classes**: PascalCase (`RatesSyncService`, `RatesResponse`)
+- **Functions/Variables**: snake_case (`sync_all_rates`, `provider_priority`)
+- **Constants**: UPPER_SNAKE_CASE (`CACHE_TTL_SECONDS`, `LOG_LEVEL`)
 - **Private methods**: Prefix with underscore (`_build_etag`)
 
 ### Docstrings
@@ -205,25 +222,7 @@ def merge_rates(
 - Use `BaseModel` for all data models
 - Add `Field(...)` with descriptions for OpenAPI documentation
 - Use `datetime` types (Pydantic auto-serializes to ISO 8601)
-- Add `Config` class with `json_schema_extra` for examples:
-
-  ```python
-  class RatesResponse(BaseModel):
-      """API response for latest rates."""
-
-      base: str = Field(..., description="Base currency code")
-      fetched_at: datetime = Field(..., description="Timestamp when rates were fetched")
-      rates: dict[str, float] = Field(..., description="Currency exchange rates")
-
-      class Config:
-          json_schema_extra = {
-              "example": {
-                  "base": "EUR",
-                  "fetched_at": "2024-02-04T12:34:56.789Z",
-                  "rates": {"USD": 1.0823}
-              }
-          }
-  ```
+- Add `Config` class with `json_schema_extra` for examples
 
 ### FastAPI Routers
 
@@ -231,44 +230,22 @@ def merge_rates(
 - Use proper return type annotations (including `Response` for 304s)
 - Add comprehensive docstrings with Args/Returns/Raises sections
 - Use dependency injection for all services/repos
-- Return Pydantic model instances, not plain dicts:
-
-  ```python
-  @router.get("/latest", response_model=RatesResponse)
-  def latest_rates(...) -> RatesResponse | Response:
-      """Get latest exchange rates."""
-      # Build Pydantic model
-      rates_response = RatesResponse(...)
-      return rates_response  # Not: return {...}
-  ```
+- Return Pydantic model instances, not plain dicts
 
 ### Error Handling
 
 - Use `HTTPException` for API errors with proper status codes
-- Log errors with context before raising:
-
-  ```python
-  logger.error(f"Failed to sync {provider}: {exc}", exc_info=True)
-  raise HTTPException(status_code=500, detail="Sync failed")
-  ```
-
+- Log errors with context before raising
 - Use try/except for external API calls (Supabase, Fixer, etc.)
 - Never expose internal errors to API clients
 
 ### Logging
 
 - Get logger at module level: `logger = logging.getLogger(__name__)`
-- Use structured logging with context:
-
-  ```python
-  logger.info(f"GET /rates/latest requested: provider={requested}")
-  logger.debug(f"Cache hit for provider={provider}")
-  logger.error(f"Error syncing {provider}: {exc}", exc_info=True)
-  ```
-
+- Use structured logging with context
 - Levels: `DEBUG` (development), `INFO` (production), `ERROR` (always)
 
-## Important Patterns
+## Common Patterns
 
 ### ETag Caching
 
@@ -314,7 +291,7 @@ etag = build_etag(rates_response.model_dump(mode='json'))  # Not: model_dump()
 | `LOG_LEVEL` | `INFO` | Logging level |
 | `ENVIRONMENT` | `development` | Environment name |
 
-## Common Gotchas
+## Common Issues
 
 1. **DateTime Serialization**: Use `datetime` type in models, not `str`
 2. **ETag with Pydantic**: Always use `model_dump(mode='json')`
@@ -345,7 +322,7 @@ Use prefixes that match your commit type:
 
 ### Commit Messages
 
-Use [Conventional Commits](https://www.conventionalcommits.org/) format:
+Use [Conventional Commits](https://www.conventionalcommits.org/) format (required for Release Please):
 
 ```
 <type>[optional scope]: <description>
@@ -357,8 +334,8 @@ Use [Conventional Commits](https://www.conventionalcommits.org/) format:
 
 **Types:**
 
-- `feat` - New feature
-- `fix` - Bug fix
+- `feat` - New feature (triggers minor version bump)
+- `fix` - Bug fix (triggers patch version bump)
 - `perf` - Performance improvement
 - `refactor` - Code change that neither fixes a bug nor adds a feature
 - `docs` - Documentation only
