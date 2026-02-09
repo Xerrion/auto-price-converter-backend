@@ -325,10 +325,61 @@ etag = build_etag(rates_response.model_dump(mode='json'))  # Not: model_dump()
 
 ## Git Conventions
 
-- Use conventional commits: `feat:`, `fix:`, `refactor:`, `docs:`, `chore:`
-- Commit messages: Imperative mood ("add feature" not "added feature")
-- **Atomic commits**: Each commit should touch as few files as possible
-- Small, focused commits with clear descriptions
-- Always work on feature branches, never commit directly to main
-- Always create PRs for code review before merging
+### Workflow
+
+This project uses a **feature branch** workflow:
+
+1. **Always work on feature branches** — never commit directly to `main`
+2. **Always create PRs** for code review before merging
+3. **Keep commits atomic** — each commit should touch as few files as possible
+
+### Branch Naming
+
+Use prefixes that match your commit type:
+
+- `feat/` - New features (e.g., `feat/rate-caching`)
+- `fix/` - Bug fixes (e.g., `fix/etag-headers`)
+- `docs/` - Documentation changes
+- `refactor/` - Code refactoring
+- `chore/` - Maintenance tasks
+
+### Commit Messages
+
+Use [Conventional Commits](https://www.conventionalcommits.org/) format:
+
+```
+<type>[optional scope]: <description>
+
+[optional body]
+
+[optional footer(s)]
+```
+
+**Types:**
+
+- `feat` - New feature
+- `fix` - Bug fix
+- `perf` - Performance improvement
+- `refactor` - Code change that neither fixes a bug nor adds a feature
+- `docs` - Documentation only
+- `chore` - Maintenance tasks
+- `test` - Adding or updating tests
+- `ci` - CI/CD changes
+
+**Examples:**
+
+```bash
+feat: add rate caching endpoint
+fix: correct ETag header generation
+docs: update API documentation
+chore: update dependencies
+feat!: redesign sync API  # Breaking change
+```
+
+### Pull Requests
+
+- **Update documentation** when behavior changes
+- **Add or update tests** when it makes sense
+- **Keep PRs narrow and well-scoped**
+- Run `uv run ruff check app/` before submitting
 - Never commit `.env` files or secrets
