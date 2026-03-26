@@ -70,26 +70,9 @@ Set `LOG_LEVEL=DEBUG` in `.env` for detailed troubleshooting.
 
 ## Deployment
 
-See [docs/RAILWAY_DEPLOYMENT.md](docs/RAILWAY_DEPLOYMENT.md) for detailed Railway deployment instructions with external cron scheduling.
+The backend is deployed on [DigitalOcean App Platform](https://www.digitalocean.com/products/app-platform). Configure environment variables (see `.env.example`) in the App Platform dashboard.
 
-### Quick Deploy to Railway
-
-1. Push code to GitHub
-2. Create new project on [Railway](https://railway.app/new)
-3. Select "Deploy from GitHub repo"
-4. Configure environment variables (see `.env.example`)
-5. **Important**: Set `SCHEDULER_MODE=external` and `ENABLE_SCHEDULER=false`
-6. Add GitHub secrets for cron job:
-   - `RAILWAY_API_URL` - Your Railway app URL
-   - `SYNC_API_KEY` - Same as in Railway env vars
-7. GitHub Actions will sync rates daily at 06:00 UTC
-
-### Cost-Effective Architecture
-
-- **Railway**: ~$0.50/month (serverless, idle-to-zero)
-- **GitHub Actions**: Free (2,000 minutes/month included)
-- **Supabase**: Free tier (<500MB)
-- **Total**: ~$0.50/month for unlimited users
+GitHub Actions syncs rates daily at 06:00 UTC via cron job.
 
 ## Development
 

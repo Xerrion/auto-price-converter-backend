@@ -16,7 +16,7 @@ jobs:
     steps:
       - name: Call sync endpoint
         run: |
-          response=$(curl -X POST "${{ secrets.RAILWAY_API_URL }}/jobs/sync" \
+          response=$(curl -X POST "${{ secrets.API_BASE_URL }}/jobs/sync" \
             -H "X-API-Key: ${{ secrets.SYNC_API_KEY }}" \
             -H "Content-Type: application/json" \
             -w "\n%{http_code}" \
@@ -40,5 +40,5 @@ jobs:
       - name: Report failure
         if: failure()
         run: |
-          echo "❌ Sync failed! Check Railway logs at:"
-          echo "${{ secrets.RAILWAY_API_URL }}"
+          echo "❌ Sync failed! Check deployment logs at:"
+          echo "${{ secrets.API_BASE_URL }}"

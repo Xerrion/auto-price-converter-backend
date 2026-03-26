@@ -31,8 +31,7 @@ def create_app() -> FastAPI:
     # Initialize settings
     settings = get_settings()
     logger.info(
-        f"Settings loaded: environment={settings.environment}, "
-        f"log_level={settings.log_level}"
+        f"Settings loaded: environment={settings.environment}, log_level={settings.log_level}"
     )
 
     # Create FastAPI app with security scheme for Swagger UI
@@ -40,10 +39,6 @@ def create_app() -> FastAPI:
         title="Auto Price Converter Rates API",
         swagger_ui_parameters={"persistAuthorization": True},
         servers=[
-            {
-                "url": "https://apc-api.up.railway.app",
-                "description": "Production",
-            },
             {"url": "http://127.0.0.1:8000", "description": "Local development"},
         ],
     )
