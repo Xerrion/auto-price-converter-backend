@@ -2,7 +2,9 @@
 
 import logging
 import sys
-from typing import Any
+import time
+from collections.abc import Callable
+from functools import wraps
 
 from app.core.config import get_settings
 
@@ -60,7 +62,7 @@ def setup_logging() -> None:
     logger = logging.getLogger(__name__)
     logger.info(
         f"Logging configured: level={settings.log_level.upper()}, "
-        f"environment={settings.environment}"
+        + f"environment={settings.environment}"
     )
 
 
@@ -86,7 +88,7 @@ class LoggerMixin:
         return logging.getLogger(self.__class__.__module__ + "." + self.__class__.__name__)
 
 
-def log_execution_time(func):
+def log_execution_time[**P, T](func: Callable[P, T]) -> Callable[P, T]:
     """
     Decorator to log function execution time.
 
@@ -95,11 +97,9 @@ def log_execution_time(func):
         def my_function():
             pass
     """
-    import time
-    from functools import wraps
 
     @wraps(func)
-    def wrapper(*args: Any, **kwargs: Any) -> Any:
+    def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
         logger = logging.getLogger(func.__module__)
         start_time = time.time()
         logger.debug(f"Starting {func.__name__}")

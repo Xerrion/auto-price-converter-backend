@@ -1,6 +1,7 @@
 """Main FastAPI application."""
 
 import logging
+from typing import cast
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -38,9 +39,6 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title="Auto Price Converter Rates API",
         swagger_ui_parameters={"persistAuthorization": True},
-        servers=[
-            {"url": "http://127.0.0.1:8000", "description": "Local development"},
-        ],
     )
 
     # Configure CORS
@@ -72,13 +70,13 @@ def create_app() -> FastAPI:
 
     # Dependency overrides for router injection
     def get_rates_repo() -> RatesRepository:
-        return app.state.rates_repo
+        return cast(RatesRepository, app.state.rates_repo)
 
     def get_symbols_repo() -> SymbolsRepository:
-        return app.state.symbols_repo
+        return cast(SymbolsRepository, app.state.symbols_repo)
 
     def get_sync_service() -> RatesSyncService:
-        return app.state.sync_service
+        return cast(RatesSyncService, app.state.sync_service)
 
     # Override dependencies
     app.dependency_overrides[RatesRepository] = get_rates_repo

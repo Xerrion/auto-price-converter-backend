@@ -1,9 +1,14 @@
 """Service for synchronizing exchange rates from multiple providers."""
 
 import logging
-from typing import Any
+from collections.abc import Callable
+from typing import cast
 
 import httpx
+
+from app.repositories.rates import RatesRepository
+from app.repositories.symbols import SymbolsRepository
+from app.services.providers import ProviderService
 
 logger = logging.getLogger(__name__)
 
@@ -13,9 +18,9 @@ class RatesSyncService:
 
     def __init__(
         self,
-        rates_repo: Any,  # Will be properly typed once we create the repository
-        symbols_repo: Any,
-        provider_service: Any,
+        rates_repo: RatesRepository,
+        symbols_repo: SymbolsRepository,
+        provider_service: ProviderService,
         provider_priority: list[str],
     ):
         """
@@ -27,10 +32,10 @@ class RatesSyncService:
             provider_service: Service for fetching from external providers
             provider_priority: List of provider names in priority order
         """
-        self.rates_repo = rates_repo
-        self.symbols_repo = symbols_repo
-        self.provider_service = provider_service
-        self.provider_priority = provider_priority
+        self.rates_repo: RatesRepository = rates_repo
+        self.symbols_repo: SymbolsRepository = symbols_repo
+        self.provider_service: ProviderService = provider_service
+        self.provider_priority: list[str] = provider_priority
         logger.debug(f"Initialized RatesSyncService with priority={provider_priority}")
 
     def merge_rates(
@@ -63,7 +68,7 @@ class RatesSyncService:
         logger.info(f"Merged rates complete: total_currencies={len(merged)}")
         return merged
 
-    def sync_all_rates(self, force: bool = False) -> dict[str, Any]:
+    def sync_all_rates(self, force: bool = False) -> dict[str, object]:
         """
         Sync rates from all providers.
 
@@ -74,16 +79,18 @@ class RatesSyncService:
             Dictionary with sync results for each provider
         """
         logger.info(f"Starting sync_all_rates: force={force}")
-        provider_results: dict[str, Any] = {}
+        provider_results: dict[str, object] = {}
         provider_rates: dict[str, dict[str, float]] = {}
         provider_dates: dict[str, str] = {}
 
+        fetchers: list[Callable[[httpx.Client], dict[str, object] | None]] = [
+            self.provider_service.fetch_fixer,
+            self.provider_service.fetch_frankfurter,
+        ]
+
         # Fetch rates from each provider
         with httpx.Client(timeout=20) as client:
-            for fetcher in [
-                self.provider_service.fetch_fixer,
-                self.provider_service.fetch_frankfurter,
-            ]:
+            for fetcher in fetchers:
                 try:
                     provider_name = fetcher.__name__.replace("fetch_", "")
 
@@ -98,23 +105,28 @@ class RatesSyncService:
                         logger.warning(f"No result from {provider_name}")
                         continue
 
+                    result_provider = str(result["provider"])
+                    result_base = str(result["base"])
+                    result_date = str(result["date"])
+                    result_rates = cast(dict[str, float], result["rates"])
+
                     run_id = self.rates_repo.store_run(
-                        result["provider"],
-                        result["base"],
-                        result["date"],
-                        result["rates"],
+                        result_provider,
+                        result_base,
+                        result_date,
+                        result_rates,
                     )
                     logger.info(
                         f"Successfully synced {provider_name}: "
-                        f"run_id={run_id}, num_rates={len(result['rates'])}"
+                        + f"run_id={run_id}, num_rates={len(result_rates)}"
                     )
-                    provider_results[result["provider"]] = {"run_id": run_id}
-                    provider_rates[result["provider"]] = result["rates"]
-                    provider_dates[result["provider"]] = result["date"]
+                    provider_results[result_provider] = {"run_id": run_id}
+                    provider_rates[result_provider] = result_rates
+                    provider_dates[result_provider] = result_date
                 except Exception as exc:
-                    provider_name = getattr(fetcher, "__name__", "unknown")
-                    logger.error(f"Error syncing {provider_name}: {exc}", exc_info=True)
-                    provider_results[provider_name] = {"error": str(exc)}
+                    fetcher_name = getattr(fetcher, "__name__", "unknown")
+                    logger.error(f"Error syncing {fetcher_name}: {exc}", exc_info=True)
+                    provider_results[str(fetcher_name)] = {"error": str(exc)}
 
         # Create combined rates run
         if provider_rates:
@@ -139,9 +151,11 @@ class RatesSyncService:
                 try:
                     symbols_result = self.provider_service.fetch_fixer_symbols(client)
                     if symbols_result:
+                        symbols_provider = str(symbols_result["provider"])
+                        symbols_data = cast(dict[str, str], symbols_result["symbols"])
                         symbols_run_id = self.symbols_repo.store_symbols(
-                            symbols_result["provider"],
-                            symbols_result["symbols"],
+                            symbols_provider,
+                            symbols_data,
                         )
                         logger.info(f"Symbols synced: run_id={symbols_run_id}")
                         provider_results["symbols"] = {"run_id": symbols_run_id}

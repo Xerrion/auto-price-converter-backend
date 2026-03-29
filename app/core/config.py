@@ -32,7 +32,10 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     environment: str = "development"
 
-    model_config = SettingsConfigDict(env_file=".env", case_sensitive=False)
+    model_config = SettingsConfigDict(  # pyright: ignore[reportUnannotatedClassAttribute]
+        env_file=".env",
+        case_sensitive=False,
+    )
 
     @property
     def cache_ttl_seconds(self) -> int:

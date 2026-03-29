@@ -2,6 +2,9 @@
 
 import logging
 from datetime import UTC, datetime
+from typing import cast
+
+from postgrest.types import JSON
 
 from supabase import Client
 
@@ -19,8 +22,8 @@ class SymbolsRepository:
             supabase: Supabase client for database operations
             cache_ttl_seconds: Cache TTL in seconds for freshness checks
         """
-        self.supabase = supabase
-        self.cache_ttl_seconds = cache_ttl_seconds
+        self.supabase: Client = supabase
+        self.cache_ttl_seconds: int = cache_ttl_seconds
         logger.debug(f"Initialized SymbolsRepository with cache_ttl={cache_ttl_seconds}s")
 
     def store_symbols(self, provider: str, symbols: dict[str, str]) -> str:
@@ -44,16 +47,17 @@ class SymbolsRepository:
             "symbols": symbols,
             "fetched_at": datetime.now(tz=UTC).isoformat(),
         }
-        resp = self.supabase.table("symbols_runs").insert(payload).execute()
+        resp = self.supabase.table("symbols_runs").insert(cast(JSON, payload)).execute()
         if not resp.data:
             logger.error(f"Failed to insert symbols run for provider={provider}")
             raise RuntimeError("Failed to insert symbols run")
 
-        run_id = resp.data[0]["id"]
+        row = cast(dict[str, object], resp.data[0])
+        run_id = cast(str, row["id"])
         logger.info(f"Successfully stored symbols: run_id={run_id}, provider={provider}")
         return run_id
 
-    def get_latest(self, provider: str) -> dict | None:
+    def get_latest(self, provider: str) -> dict[str, object] | None:
         """
         Get latest symbols for a provider.
 
@@ -76,10 +80,10 @@ class SymbolsRepository:
             logger.debug(f"No symbols found for provider={provider}")
             return None
 
-        row = symbols_resp.data[0]
-        symbols = row.get("symbols") or {}
-        result = {
-            "provider": row["provider"],
+        row = cast(dict[str, object], symbols_resp.data[0])
+        symbols = cast(dict[str, str], row.get("symbols") or {})
+        result: dict[str, object] = {
+            "provider": str(row["provider"]),
             "fetched_at": str(row["fetched_at"]),
             "symbols": symbols,
         }
@@ -103,7 +107,7 @@ class SymbolsRepository:
             return False
 
         try:
-            fetched_at = datetime.fromisoformat(latest["fetched_at"])
+            fetched_at = datetime.fromisoformat(str(latest["fetched_at"]))
         except ValueError:
             logger.warning(f"Invalid timestamp for symbols provider={provider}")
             return False
@@ -117,6 +121,6 @@ class SymbolsRepository:
 
         logger.debug(
             f"Freshness check for symbols provider={provider}: "
-            f"age={age_seconds:.0f}s, ttl={self.cache_ttl_seconds}s, fresh={is_fresh}"
+            + f"age={age_seconds:.0f}s, ttl={self.cache_ttl_seconds}s, fresh={is_fresh}"
         )
         return is_fresh

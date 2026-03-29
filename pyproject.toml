@@ -2,7 +2,7 @@
 name = "auto-price-converter-backend"
 version = "0.1.1"
 description = "Auto Price Converter Rates API"
-requires-python = ">=3.13,<3.14"
+requires-python = ">=3.13"
 dependencies = [
     "fastapi[standard]>=0.115.0",
     "uvicorn[standard]>=0.30.0",
@@ -108,3 +108,29 @@ exclude_lines = [
 ]
 fail_under = 80
 show_missing = true
+
+[tool.basedpyright]
+typeCheckingMode = "all"
+pythonVersion = "3.13"
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+module = [
+    "supabase.*",
+    "gotrue.*",
+    "postgrest.*",
+    "realtime.*",
+    "storage3.*",
+    "supafunc.*",
+]
+ignore_missing_imports = true
+
+[dependency-groups]
+dev = [
+    "basedpyright>=1.38.4",
+    "mypy>=1.15",
+]
