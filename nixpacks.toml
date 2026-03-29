@@ -1,0 +1,11 @@
+# Nixpacks build configuration for auto-price-converter-backend
+# https://nixpacks.com/docs/configuration/file
+
+[phases.setup]
+nixPkgs = ["python313", "uv"]
+
+[phases.install]
+cmds = ["uv sync --no-dev --frozen"]
+
+[start]
+cmd = "uv run uvicorn app.main:app --host 0.0.0.0 --port 3000 --workers 4 --interface asgi3"
