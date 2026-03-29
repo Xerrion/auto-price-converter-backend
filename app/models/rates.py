@@ -1,9 +1,8 @@
 """Database models for exchange rates."""
 
 from datetime import datetime
-from typing import ClassVar
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class RatesEntry(BaseModel):
@@ -33,10 +32,8 @@ class RatesResponse(BaseModel):
     fetched_at: datetime = Field(..., description="Timestamp when rates were fetched")
     rates: dict[str, float] = Field(..., description="Currency exchange rates")
 
-    class Config:
-        """Pydantic model configuration."""
-
-        json_schema_extra: ClassVar[dict[str, object]] = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "base": "EUR",
                 "date": "2024-02-04",
@@ -44,3 +41,4 @@ class RatesResponse(BaseModel):
                 "rates": {"USD": 1.0823, "GBP": 0.8543, "JPY": 161.95},
             }
         }
+    )

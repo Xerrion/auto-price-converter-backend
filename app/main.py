@@ -1,4 +1,4 @@
-"""Main FastAPI application. Gotta go fast"""
+"""Main FastAPI application."""
 
 import logging
 from typing import cast

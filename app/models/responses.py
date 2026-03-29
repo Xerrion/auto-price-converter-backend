@@ -1,8 +1,6 @@
 """API response models for all endpoints."""
 
-from typing import ClassVar
-
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class HealthResponse(BaseModel):
@@ -20,16 +18,15 @@ class SyncProviderResult(BaseModel):
     )
     error: str | None = Field(default=None, description="Error message if sync failed")
 
-    class Config:
-        """Pydantic model configuration."""
-
-        json_schema_extra: ClassVar[dict[str, object]] = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "examples": [
                 {"run_id": "550e8400-e29b-41d4-a716-446655440000"},
                 {"skipped": "fresh-cache"},
                 {"error": "Connection timeout"},
             ]
         }
+    )
 
 
 class SyncResponse(BaseModel):
@@ -40,10 +37,8 @@ class SyncResponse(BaseModel):
         description="Sync results for each provider (fixer, frankfurter, combined, symbols)",
     )
 
-    class Config:
-        """Pydantic model configuration."""
-
-        json_schema_extra: ClassVar[dict[str, object]] = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "providers": {
                     "fixer": {"run_id": "550e8400-e29b-41d4-a716-446655440000"},
@@ -53,3 +48,4 @@ class SyncResponse(BaseModel):
                 }
             }
         }
+    )

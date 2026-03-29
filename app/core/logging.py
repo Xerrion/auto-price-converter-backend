@@ -56,7 +56,6 @@ def setup_logging() -> None:
     logging.getLogger("httpx").setLevel(logging.WARNING)
     logging.getLogger("httpcore").setLevel(logging.WARNING)
     logging.getLogger("urllib3").setLevel(logging.WARNING)
-    logging.getLogger("apscheduler").setLevel(logging.INFO)
 
     # Log startup message
     logger = logging.getLogger(__name__)
