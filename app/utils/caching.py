@@ -2,12 +2,14 @@
 
 import hashlib
 import json
-from typing import Any
 
 from fastapi import Request, Response
 
+# JSON-compatible value type for model_dump(mode="json") output
+type JsonValue = str | int | float | bool | None | list[JsonValue] | dict[str, JsonValue]
 
-def build_etag(payload: dict[str, Any]) -> str:
+
+def build_etag(payload: dict[str, JsonValue]) -> str:
     """
     Build ETag from response payload.
 

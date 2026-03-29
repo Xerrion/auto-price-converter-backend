@@ -1,7 +1,8 @@
 """Rates router for exchange rates endpoints."""
 
 import logging
-from typing import Annotated
+from datetime import datetime
+from typing import Annotated, cast
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 
@@ -56,12 +57,15 @@ def latest_rates(
         logger.warning(f"No rates available for provider={requested}")
         raise HTTPException(status_code=404, detail="No rates available")
 
+    # Parse boundary data into typed values (Parse, Don't Validate)
+    rates = cast(dict[str, float], run["rates"])
+
     # Build response model
     rates_response = RatesResponse(
-        base=run["base"],
-        date=run["date"],
-        fetched_at=run["fetched_at"],
-        rates=run["rates"],
+        base=str(run["base"]),
+        date=str(run["date"]),
+        fetched_at=cast(datetime, run["fetched_at"]),
+        rates=rates,
     )
 
     # ETag handling (build from model with JSON serialization)
@@ -73,7 +77,7 @@ def latest_rates(
         return not_modified
 
     logger.info(
-        f"Returning rates: provider={requested}, date={run['date']}, num_rates={len(run['rates'])}"
+        f"Returning rates: provider={requested}, date={run['date']}, num_rates={len(rates)}"
     )
     apply_cache_headers(response, etag, settings.cache_ttl_seconds)
     return rates_response

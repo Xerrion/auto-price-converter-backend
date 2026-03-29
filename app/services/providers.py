@@ -1,7 +1,7 @@
 """Service for fetching exchange rates from external providers."""
 
 import logging
-from typing import Any
+from typing import cast
 
 import httpx
 
@@ -20,13 +20,13 @@ class ProviderService:
         Args:
             fixer_api_key: API key for Fixer.io service
         """
-        self.fixer_api_key = fixer_api_key
+        self.fixer_api_key: str | None = fixer_api_key
         logger.debug(
-            f"Initialized ProviderService with "
-            f"fixer_api_key={'set' if fixer_api_key else 'not set'}"
+            "Initialized ProviderService with "
+            + f"fixer_api_key={'set' if fixer_api_key else 'not set'}"
         )
 
-    def fetch_fixer(self, client: httpx.Client) -> dict[str, Any] | None:
+    def fetch_fixer(self, client: httpx.Client) -> dict[str, object] | None:
         """
         Fetch exchange rates from Fixer API.
 
@@ -49,21 +49,21 @@ class ProviderService:
 
         try:
             response = client.get(url, params={"access_key": self.fixer_api_key})
-            response.raise_for_status()
-            data = response.json()
+            _ = response.raise_for_status()
+            data = cast(dict[str, object], response.json())
 
             if not data.get("success"):
                 error_msg = f"Fixer error: {data.get('error')}"
                 logger.error(error_msg)
                 raise RuntimeError(error_msg)
 
-            base = data.get("base", "EUR")
-            rates = data.get("rates", {})
+            base = str(data.get("base", "EUR"))
+            rates = cast(dict[str, float], data.get("rates", {}))
             normalized = normalize_to_eur(base, rates)
 
             logger.info(
                 f"Successfully fetched Fixer rates: base={base}, "
-                f"date={data.get('date')}, num_rates={len(normalized)}"
+                + f"date={data.get('date')}, num_rates={len(normalized)}"
             )
 
             return {
@@ -79,7 +79,7 @@ class ProviderService:
             logger.error(f"Unexpected error fetching from Fixer: {e}")
             raise
 
-    def fetch_frankfurter(self, client: httpx.Client) -> dict[str, Any] | None:
+    def fetch_frankfurter(self, client: httpx.Client) -> dict[str, object] | None:
         """
         Fetch exchange rates from Frankfurter API.
 
@@ -97,14 +97,14 @@ class ProviderService:
 
         try:
             response = client.get(url, params={"base": "EUR"})
-            response.raise_for_status()
-            data = response.json()
-            rates = data.get("rates", {})
+            _ = response.raise_for_status()
+            data = cast(dict[str, object], response.json())
+            rates = cast(dict[str, float], data.get("rates", {}))
             normalized = normalize_to_eur("EUR", rates)
 
             logger.info(
-                f"Successfully fetched Frankfurter rates: "
-                f"date={data.get('date')}, num_rates={len(normalized)}"
+                "Successfully fetched Frankfurter rates: "
+                + f"date={data.get('date')}, num_rates={len(normalized)}"
             )
 
             return {
@@ -120,7 +120,7 @@ class ProviderService:
             logger.error(f"Unexpected error fetching from Frankfurter: {e}")
             raise
 
-    def fetch_fixer_symbols(self, client: httpx.Client) -> dict[str, Any] | None:
+    def fetch_fixer_symbols(self, client: httpx.Client) -> dict[str, object] | None:
         """
         Fetch currency symbols from Fixer API.
 
@@ -143,15 +143,15 @@ class ProviderService:
 
         try:
             response = client.get(url, params={"access_key": self.fixer_api_key})
-            response.raise_for_status()
-            data = response.json()
+            _ = response.raise_for_status()
+            data = cast(dict[str, object], response.json())
 
             if not data.get("success"):
                 error_msg = f"Fixer symbols error: {data.get('error')}"
                 logger.error(error_msg)
                 raise RuntimeError(error_msg)
 
-            symbols = data.get("symbols", {})
+            symbols = cast(dict[str, str], data.get("symbols", {}))
             logger.info(f"Successfully fetched Fixer symbols: num_symbols={len(symbols)}")
             return {"provider": "fixer", "symbols": symbols}
         except httpx.HTTPStatusError as e:

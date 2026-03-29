@@ -1,12 +1,14 @@
 """API response models for all endpoints."""
 
+from typing import ClassVar
+
 from pydantic import BaseModel, Field
 
 
 class HealthResponse(BaseModel):
     """Health check response."""
 
-    status: str = Field(..., example="ok", description="Service status")
+    status: str = Field(..., description="Service status", json_schema_extra={"examples": ["ok"]})
 
 
 class SyncProviderResult(BaseModel):
@@ -21,7 +23,7 @@ class SyncProviderResult(BaseModel):
     class Config:
         """Pydantic model configuration."""
 
-        json_schema_extra = {
+        json_schema_extra: ClassVar[dict[str, object]] = {
             "examples": [
                 {"run_id": "550e8400-e29b-41d4-a716-446655440000"},
                 {"skipped": "fresh-cache"},
@@ -41,7 +43,7 @@ class SyncResponse(BaseModel):
     class Config:
         """Pydantic model configuration."""
 
-        json_schema_extra = {
+        json_schema_extra: ClassVar[dict[str, object]] = {
             "example": {
                 "providers": {
                     "fixer": {"run_id": "550e8400-e29b-41d4-a716-446655440000"},

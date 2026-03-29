@@ -1,6 +1,7 @@
 """Database models for exchange rates."""
 
 from datetime import datetime
+from typing import ClassVar
 
 from pydantic import BaseModel, Field
 
@@ -35,7 +36,7 @@ class RatesResponse(BaseModel):
     class Config:
         """Pydantic model configuration."""
 
-        json_schema_extra = {
+        json_schema_extra: ClassVar[dict[str, object]] = {
             "example": {
                 "base": "EUR",
                 "date": "2024-02-04",

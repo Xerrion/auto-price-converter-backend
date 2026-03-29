@@ -1,7 +1,7 @@
 """Symbols router for currency symbols endpoints."""
 
 import logging
-from typing import Annotated
+from typing import Annotated, cast
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 
@@ -46,10 +46,13 @@ def latest_symbols(
         logger.warning(f"No symbols available for provider={requested}")
         raise HTTPException(status_code=404, detail="No symbols available")
 
+    # Parse boundary data into typed values (Parse, Don't Validate)
+    symbols = cast(dict[str, str], result["symbols"])
+
     # Build response model
     symbols_response = SymbolsResponse(
-        provider=result["provider"],
-        symbols=result["symbols"],
+        provider=str(result["provider"]),
+        symbols=symbols,
     )
 
     # ETag handling
@@ -60,6 +63,6 @@ def latest_symbols(
         apply_cache_headers(not_modified, etag, settings.cache_ttl_seconds)
         return not_modified
 
-    logger.info(f"Returning symbols: provider={requested}, num_symbols={len(result['symbols'])}")
+    logger.info(f"Returning symbols: provider={requested}, num_symbols={len(symbols)}")
     apply_cache_headers(response, etag, settings.cache_ttl_seconds)
     return symbols_response

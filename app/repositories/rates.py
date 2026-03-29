@@ -2,6 +2,9 @@
 
 import logging
 from datetime import UTC, datetime
+from typing import cast
+
+from postgrest.types import JSON
 
 from supabase import Client
 
@@ -19,8 +22,8 @@ class RatesRepository:
             supabase: Supabase client for database operations
             cache_ttl_seconds: Cache TTL in seconds for freshness checks
         """
-        self.supabase = supabase
-        self.cache_ttl_seconds = cache_ttl_seconds
+        self.supabase: Client = supabase
+        self.cache_ttl_seconds: int = cache_ttl_seconds
         logger.debug(f"Initialized RatesRepository with cache_ttl={cache_ttl_seconds}s")
 
     def store_run(self, provider: str, base: str, date: str, rates: dict[str, float]) -> str:
@@ -40,8 +43,8 @@ class RatesRepository:
             RuntimeError: If database insert fails
         """
         logger.info(
-            f"Storing rates run: provider={provider}, base={base}, date={date}, "
-            f"num_rates={len(rates)}"
+            f"Storing rates run: provider={provider}, base={base}, date={date}"
+            + f", num_rates={len(rates)}"
         )
 
         run_payload = {
@@ -55,7 +58,8 @@ class RatesRepository:
             logger.error(f"Failed to insert rates run for provider={provider}")
             raise RuntimeError("Failed to insert rates run")
 
-        run_id = run_resp.data[0]["id"]
+        row = cast(dict[str, object], run_resp.data[0])
+        run_id = cast(str, row["id"])
         logger.debug(f"Created rates run with id={run_id}")
 
         entries_payload = [
@@ -63,13 +67,13 @@ class RatesRepository:
             for code, rate in rates.items()
         ]
         if entries_payload:
-            self.supabase.table("rates_entries").insert(entries_payload).execute()
+            _ = self.supabase.table("rates_entries").insert(cast(JSON, entries_payload)).execute()
             logger.debug(f"Stored {len(entries_payload)} rate entries for run_id={run_id}")
 
         logger.info(f"Successfully stored rates run: run_id={run_id}, provider={provider}")
         return run_id
 
-    def get_latest_run(self, provider: str) -> dict | None:
+    def get_latest_run(self, provider: str) -> dict[str, object] | None:
         """
         Get latest rates run for a provider.
 
@@ -92,11 +96,14 @@ class RatesRepository:
             logger.debug(f"No rates found for provider={provider}")
             return None
 
-        run = run_resp.data[0]
-        rates = {code: float(rate) for code, rate in (run.get("rates") or {}).items()}
-        result = {
-            "provider": run["provider"],
-            "base": run["base"],
+        run = cast(dict[str, object], run_resp.data[0])
+        raw_rates = cast(dict[str, object], run.get("rates") or {})
+        rates: dict[str, float] = {
+            str(code): float(cast(int | float, rate)) for code, rate in raw_rates.items()
+        }
+        result: dict[str, object] = {
+            "provider": str(run["provider"]),
+            "base": str(run["base"]),
             "date": str(run["date"]),
             "fetched_at": str(run["fetched_at"]),
             "rates": rates,
@@ -104,7 +111,7 @@ class RatesRepository:
 
         logger.debug(
             f"Retrieved latest run for provider={provider}: "
-            f"date={result['date']}, num_rates={len(rates)}"
+            + f"date={result['date']}, num_rates={len(rates)}"
         )
         return result
 
@@ -124,7 +131,7 @@ class RatesRepository:
             return False
 
         try:
-            fetched_at = datetime.fromisoformat(latest["fetched_at"])
+            fetched_at = datetime.fromisoformat(str(latest["fetched_at"]))
         except ValueError:
             logger.warning(f"Invalid timestamp for provider={provider}")
             return False
@@ -138,6 +145,6 @@ class RatesRepository:
 
         logger.debug(
             f"Freshness check for provider={provider}: "
-            f"age={age_seconds:.0f}s, ttl={self.cache_ttl_seconds}s, fresh={is_fresh}"
+            + f"age={age_seconds:.0f}s, ttl={self.cache_ttl_seconds}s, fresh={is_fresh}"
         )
         return is_fresh
