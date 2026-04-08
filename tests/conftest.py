@@ -95,7 +95,7 @@ def mock_rates_repo(sample_rates_run: dict) -> MagicMock:
     """Create mock rates repository."""
     repo = MagicMock(spec=RatesRepository)
     repo.get_latest_run.return_value = sample_rates_run
-    repo.is_fresh.return_value = False
+    repo.get_latest_run_if_fresh.return_value = None
     repo.store_run.return_value = "test-run-id"
     repo.cache_ttl_seconds = 86400
     return repo
@@ -106,7 +106,7 @@ def mock_symbols_repo(sample_symbols_run: dict) -> MagicMock:
     """Create mock symbols repository."""
     repo = MagicMock(spec=SymbolsRepository)
     repo.get_latest.return_value = sample_symbols_run
-    repo.is_fresh.return_value = False
+    repo.get_latest_if_fresh.return_value = None
     repo.store_symbols.return_value = "test-symbols-id"
     repo.cache_ttl_seconds = 86400
     return repo

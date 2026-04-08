@@ -1,8 +1,11 @@
 """Tests for RatesSyncService."""
 
+from datetime import UTC, datetime, timedelta
 from unittest.mock import MagicMock, patch
 
-from app.services.rates_sync import RatesSyncService
+import pytest
+
+from app.services.rates_sync import RatesSyncService, _fmt_duration
 
 
 class TestMergeRates:
@@ -98,11 +101,14 @@ class TestSyncAllRates:
 
     def test_skips_fresh_providers(self) -> None:
         """Skips providers with fresh cache when force=False."""
+        fresh_row = {"fetched_at": "2024-02-04T12:00:00+00:00"}
         mock_rates_repo = MagicMock()
-        mock_rates_repo.is_fresh.return_value = True  # Cache is fresh
+        mock_rates_repo.get_latest_run_if_fresh.return_value = fresh_row
+        mock_rates_repo.cache_ttl_seconds = 86400
 
         mock_symbols_repo = MagicMock()
-        mock_symbols_repo.is_fresh.return_value = True
+        mock_symbols_repo.get_latest_if_fresh.return_value = fresh_row
+        mock_symbols_repo.cache_ttl_seconds = 86400
 
         mock_provider_service = MagicMock()
         # Set __name__ attributes for the fetcher methods (used by sync_all_rates)
@@ -126,11 +132,11 @@ class TestSyncAllRates:
     def test_force_ignores_fresh_cache(self) -> None:
         """Fetches even when fresh if force=True."""
         mock_rates_repo = MagicMock()
-        mock_rates_repo.is_fresh.return_value = True  # Cache is fresh
+        mock_rates_repo.get_latest_run_if_fresh.return_value = None
         mock_rates_repo.store_run.return_value = "test-run-id"
 
         mock_symbols_repo = MagicMock()
-        mock_symbols_repo.is_fresh.return_value = True
+        mock_symbols_repo.get_latest_if_fresh.return_value = None
         mock_symbols_repo.store_symbols.return_value = "test-symbols-id"
 
         mock_provider_service = MagicMock()
@@ -172,11 +178,11 @@ class TestSyncAllRates:
     def test_creates_combined_rates(self) -> None:
         """Combined rates are created from provider rates."""
         mock_rates_repo = MagicMock()
-        mock_rates_repo.is_fresh.return_value = False
+        mock_rates_repo.get_latest_run_if_fresh.return_value = None
         mock_rates_repo.store_run.return_value = "test-run-id"
 
         mock_symbols_repo = MagicMock()
-        mock_symbols_repo.is_fresh.return_value = False
+        mock_symbols_repo.get_latest_if_fresh.return_value = None
         mock_symbols_repo.store_symbols.return_value = "test-symbols-id"
 
         mock_provider_service = MagicMock()
@@ -224,11 +230,11 @@ class TestSyncAllRates:
     def test_handles_provider_error_gracefully(self) -> None:
         """Continues on individual provider failure."""
         mock_rates_repo = MagicMock()
-        mock_rates_repo.is_fresh.return_value = False
+        mock_rates_repo.get_latest_run_if_fresh.return_value = None
         mock_rates_repo.store_run.return_value = "test-run-id"
 
         mock_symbols_repo = MagicMock()
-        mock_symbols_repo.is_fresh.return_value = False
+        mock_symbols_repo.get_latest_if_fresh.return_value = None
         mock_symbols_repo.store_symbols.return_value = "test-symbols-id"
 
         mock_provider_service = MagicMock()
@@ -261,11 +267,11 @@ class TestSyncAllRates:
     def test_syncs_symbols(self) -> None:
         """Symbols sync is called."""
         mock_rates_repo = MagicMock()
-        mock_rates_repo.is_fresh.return_value = False
+        mock_rates_repo.get_latest_run_if_fresh.return_value = None
         mock_rates_repo.store_run.return_value = "test-run-id"
 
         mock_symbols_repo = MagicMock()
-        mock_symbols_repo.is_fresh.return_value = False
+        mock_symbols_repo.get_latest_if_fresh.return_value = None
         mock_symbols_repo.store_symbols.return_value = "test-symbols-id"
 
         mock_provider_service = MagicMock()
@@ -300,11 +306,14 @@ class TestSyncAllRates:
 
     def test_symbols_skipped_when_fresh(self) -> None:
         """Symbols sync skipped when cache is fresh."""
+        fresh_row = {"fetched_at": "2024-02-04T12:00:00+00:00"}
         mock_rates_repo = MagicMock()
-        mock_rates_repo.is_fresh.return_value = True
+        mock_rates_repo.get_latest_run_if_fresh.return_value = fresh_row
+        mock_rates_repo.cache_ttl_seconds = 86400
 
         mock_symbols_repo = MagicMock()
-        mock_symbols_repo.is_fresh.return_value = True  # Symbols are fresh
+        mock_symbols_repo.get_latest_if_fresh.return_value = fresh_row
+        mock_symbols_repo.cache_ttl_seconds = 86400
 
         mock_provider_service = MagicMock()
         # Set __name__ attributes for the fetcher methods (used by sync_all_rates)
@@ -327,11 +336,11 @@ class TestSyncAllRates:
     def test_force_with_no_provider_data(self) -> None:
         """Handles case when force=True but all providers return None."""
         mock_rates_repo = MagicMock()
-        mock_rates_repo.is_fresh.return_value = False
+        mock_rates_repo.get_latest_run_if_fresh.return_value = None
         mock_rates_repo.store_run.return_value = "test-run-id"
 
         mock_symbols_repo = MagicMock()
-        mock_symbols_repo.is_fresh.return_value = False
+        mock_symbols_repo.get_latest_if_fresh.return_value = None
         mock_symbols_repo.store_symbols.return_value = "test-symbols-id"
 
         mock_provider_service = MagicMock()
@@ -365,11 +374,11 @@ class TestSyncAllRates:
     def test_symbols_sync_error(self) -> None:
         """Handles exception during symbols sync gracefully."""
         mock_rates_repo = MagicMock()
-        mock_rates_repo.is_fresh.return_value = False
+        mock_rates_repo.get_latest_run_if_fresh.return_value = None
         mock_rates_repo.store_run.return_value = "test-run-id"
 
         mock_symbols_repo = MagicMock()
-        mock_symbols_repo.is_fresh.return_value = False
+        mock_symbols_repo.get_latest_if_fresh.return_value = None
 
         mock_provider_service = MagicMock()
         # Set __name__ attributes for the fetcher methods
@@ -402,11 +411,11 @@ class TestSyncAllRates:
     def test_symbols_returns_none(self) -> None:
         """Handles when fetch_fixer_symbols returns None (no API key)."""
         mock_rates_repo = MagicMock()
-        mock_rates_repo.is_fresh.return_value = False
+        mock_rates_repo.get_latest_run_if_fresh.return_value = None
         mock_rates_repo.store_run.return_value = "test-run-id"
 
         mock_symbols_repo = MagicMock()
-        mock_symbols_repo.is_fresh.return_value = False
+        mock_symbols_repo.get_latest_if_fresh.return_value = None
 
         mock_provider_service = MagicMock()
         # Set __name__ attributes for the fetcher methods
@@ -438,3 +447,168 @@ class TestSyncAllRates:
         )
         # Rates should still succeed
         assert "run_id" in result["providers"]["fixer"]
+
+
+class TestFmtDuration:
+    """Tests for the module-level _fmt_duration helper."""
+
+    @pytest.mark.parametrize(
+        ("seconds", "expected"),
+        [
+            (0.0, "0m"),
+            (0, "0m"),
+            (45, "0m"),
+            (59, "0m"),
+            (60, "1m"),
+            (119, "1m"),
+            (120, "2m"),
+            (3540, "59m"),
+            (3599, "59m"),
+            (3600, "1h 0m"),
+            (3660, "1h 1m"),
+            (3661, "1h 1m"),
+            (7384, "2h 3m"),
+            (86400, "24h 0m"),
+        ],
+        ids=[
+            "zero-float",
+            "zero-int",
+            "sub-minute-45s",
+            "sub-minute-59s",
+            "exactly-one-minute",
+            "one-minute-boundary",
+            "two-minutes",
+            "fifty-nine-minutes",
+            "just-under-one-hour",
+            "exactly-one-hour",
+            "one-hour-one-minute",
+            "one-hour-one-minute-one-second",
+            "two-hours-three-minutes-four-seconds",
+            "twenty-four-hours",
+        ],
+    )
+    def test_format_values(self, seconds: float, expected: str) -> None:
+        """Verifies correct hours/minutes formatting for various durations."""
+        assert _fmt_duration(seconds) == expected
+
+    def test_negative_clamped_to_zero(self) -> None:
+        """Negative seconds are clamped to 0, producing '0m'."""
+        assert _fmt_duration(-1) == "0m"
+        assert _fmt_duration(-100) == "0m"
+        assert _fmt_duration(-999_999) == "0m"
+
+    def test_fractional_seconds_truncated(self) -> None:
+        """Fractional seconds are truncated via int(), not rounded."""
+        # 119.9 -> int(119) -> 119 // 60 = 1 minute
+        assert _fmt_duration(119.9) == "1m"
+        # 59.9 -> int(59) -> 59 // 60 = 0 minutes
+        assert _fmt_duration(59.9) == "0m"
+
+    def test_hours_shown_only_when_positive(self) -> None:
+        """Hours portion is omitted when total duration is under one hour."""
+        result_under = _fmt_duration(3599)
+        assert "h" not in result_under
+
+        result_at = _fmt_duration(3600)
+        assert "h" in result_at
+
+
+class TestCacheAgeInfo:
+    """Tests for RatesSyncService._cache_age_info instance method."""
+
+    @staticmethod
+    def _make_service() -> RatesSyncService:
+        """Build a minimal RatesSyncService with mock dependencies."""
+        return RatesSyncService(
+            rates_repo=MagicMock(),
+            symbols_repo=MagicMock(),
+            provider_service=MagicMock(),
+            provider_priority=["fixer"],
+        )
+
+    def test_utc_aware_timestamp(self) -> None:
+        """UTC-aware ISO timestamp produces correct age and expiry strings."""
+        frozen_now = datetime(2025, 6, 15, 14, 0, 0, tzinfo=UTC)
+        fetched_at = (frozen_now - timedelta(hours=2)).isoformat()
+        ttl_seconds = 24 * 3600  # 24 hours
+
+        with patch("app.services.rates_sync.datetime") as mock_dt:
+            mock_dt.now.return_value = frozen_now
+            mock_dt.fromisoformat = datetime.fromisoformat
+            mock_dt.side_effect = lambda *a, **kw: datetime(*a, **kw)
+
+            result = self._make_service()._cache_age_info(fetched_at, ttl_seconds)
+
+        assert result == "fetched 2h 0m ago, expires in 22h 0m"
+
+    def test_naive_timestamp_treated_as_utc(self) -> None:
+        """Naive ISO timestamp (no tzinfo) is treated as UTC."""
+        frozen_now = datetime(2025, 6, 15, 14, 0, 0, tzinfo=UTC)
+        # Naive timestamp - no timezone suffix
+        fetched_at = "2025-06-15T12:00:00"
+        ttl_seconds = 24 * 3600
+
+        with patch("app.services.rates_sync.datetime") as mock_dt:
+            mock_dt.now.return_value = frozen_now
+            mock_dt.fromisoformat = datetime.fromisoformat
+            mock_dt.side_effect = lambda *a, **kw: datetime(*a, **kw)
+
+            result = self._make_service()._cache_age_info(fetched_at, ttl_seconds)
+
+        assert result == "fetched 2h 0m ago, expires in 22h 0m"
+
+    def test_z_suffix_timestamp(self) -> None:
+        """ISO timestamp with 'Z' suffix parses correctly."""
+        frozen_now = datetime(2025, 6, 15, 14, 0, 0, tzinfo=UTC)
+        fetched_at = "2025-06-15T10:00:00Z"
+        ttl_seconds = 24 * 3600
+
+        with patch("app.services.rates_sync.datetime") as mock_dt:
+            mock_dt.now.return_value = frozen_now
+            mock_dt.fromisoformat = datetime.fromisoformat
+            mock_dt.side_effect = lambda *a, **kw: datetime(*a, **kw)
+
+            result = self._make_service()._cache_age_info(fetched_at, ttl_seconds)
+
+        assert result == "fetched 4h 0m ago, expires in 20h 0m"
+
+    def test_expired_cache_shows_zero_remaining(self) -> None:
+        """When TTL is exceeded, remaining time is clamped to '0m'."""
+        frozen_now = datetime(2025, 6, 15, 14, 0, 0, tzinfo=UTC)
+        # Fetched 25 hours ago, but TTL is only 24 hours
+        fetched_at = (frozen_now - timedelta(hours=25)).isoformat()
+        ttl_seconds = 24 * 3600
+
+        with patch("app.services.rates_sync.datetime") as mock_dt:
+            mock_dt.now.return_value = frozen_now
+            mock_dt.fromisoformat = datetime.fromisoformat
+            mock_dt.side_effect = lambda *a, **kw: datetime(*a, **kw)
+
+            result = self._make_service()._cache_age_info(fetched_at, ttl_seconds)
+
+        assert result == "fetched 25h 0m ago, expires in 0m"
+
+    def test_invalid_string_returns_fallback(self) -> None:
+        """Unparseable timestamp falls back to 'fetched_at=<raw>'."""
+        result = self._make_service()._cache_age_info("not-a-date", 3600)
+        assert result == "fetched_at=not-a-date"
+
+    def test_empty_string_returns_fallback(self) -> None:
+        """Empty string falls back to 'fetched_at='."""
+        result = self._make_service()._cache_age_info("", 3600)
+        assert result == "fetched_at="
+
+    def test_sub_minute_age(self) -> None:
+        """Cache fetched seconds ago shows '0m' for age."""
+        frozen_now = datetime(2025, 6, 15, 14, 0, 0, tzinfo=UTC)
+        fetched_at = (frozen_now - timedelta(seconds=30)).isoformat()
+        ttl_seconds = 3600
+
+        with patch("app.services.rates_sync.datetime") as mock_dt:
+            mock_dt.now.return_value = frozen_now
+            mock_dt.fromisoformat = datetime.fromisoformat
+            mock_dt.side_effect = lambda *a, **kw: datetime(*a, **kw)
+
+            result = self._make_service()._cache_age_info(fetched_at, ttl_seconds)
+
+        assert result == "fetched 0m ago, expires in 59m"

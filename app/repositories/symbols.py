@@ -91,6 +91,39 @@ class SymbolsRepository:
         logger.debug(f"Retrieved symbols for provider={provider}: num_symbols={len(symbols)}")
         return result
 
+    def get_latest_if_fresh(self, provider: str) -> dict[str, object] | None:
+        """
+        Get latest symbols only if they are still within the cache TTL.
+
+        Combines get_latest and freshness check into a single DB query.
+
+        Args:
+            provider: Provider name to query
+
+        Returns:
+            Row dict with provider, fetched_at, and symbols
+            if the cache is fresh, or None if stale or missing.
+        """
+        latest = self.get_latest(provider)
+        if not latest:
+            logger.debug(f"get_latest_if_fresh provider={provider}: fresh=False")
+            return None
+
+        try:
+            fetched_at = datetime.fromisoformat(str(latest["fetched_at"]))
+        except ValueError:
+            logger.warning(f"Invalid timestamp for provider={provider}")
+            return None
+
+        now = datetime.now(tz=UTC)
+        if fetched_at.tzinfo is None:
+            fetched_at = fetched_at.replace(tzinfo=UTC)
+
+        age_seconds = (now - fetched_at).total_seconds()
+        is_fresh = age_seconds < self.cache_ttl_seconds
+        logger.debug(f"get_latest_if_fresh provider={provider}: fresh={is_fresh}")
+        return latest if is_fresh else None
+
     def is_fresh(self, provider: str) -> bool:
         """
         Check if provider's symbols are still fresh.
