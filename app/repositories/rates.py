@@ -115,6 +115,39 @@ class RatesRepository:
         )
         return result
 
+    def get_latest_run_if_fresh(self, provider: str) -> dict[str, object] | None:
+        """
+        Get latest rates run only if it is still within the cache TTL.
+
+        Combines get_latest_run and freshness check into a single DB query.
+
+        Args:
+            provider: Provider name to query
+
+        Returns:
+            Row dict with provider, base, date, fetched_at, and rates
+            if the cache is fresh, or None if stale or missing.
+        """
+        latest = self.get_latest_run(provider)
+        if not latest:
+            logger.debug(f"get_latest_run_if_fresh provider={provider}: fresh=False")
+            return None
+
+        try:
+            fetched_at = datetime.fromisoformat(str(latest["fetched_at"]))
+        except ValueError:
+            logger.warning(f"Invalid timestamp for provider={provider}")
+            return None
+
+        now = datetime.now(tz=UTC)
+        if fetched_at.tzinfo is None:
+            fetched_at = fetched_at.replace(tzinfo=UTC)
+
+        age_seconds = (now - fetched_at).total_seconds()
+        is_fresh = age_seconds < self.cache_ttl_seconds
+        logger.debug(f"get_latest_run_if_fresh provider={provider}: fresh={is_fresh}")
+        return latest if is_fresh else None
+
     def is_fresh(self, provider: str) -> bool:
         """
         Check if provider's rates are still fresh.
